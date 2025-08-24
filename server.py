@@ -18,7 +18,7 @@ import time
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,  # Changed from INFO to WARNING to reduce verbosity
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('server.log', encoding='utf-8'),
@@ -26,6 +26,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Suppress Flask's default logging
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 app = Flask(__name__)
 CORS(app)
@@ -108,7 +111,8 @@ class MessageManager:
             'sender': sender,
             'message': message,
             'timestamp': datetime.now().isoformat(),
-            'edited': False
+            'edited': False,
+            'delivered': False  # Track delivery status
         }
 
         if target_user:
@@ -168,6 +172,31 @@ class MessageManager:
                 logger.info(f"Message {message_id} deleted by {requesting_user}")
                 return True
         return False
+
+    @staticmethod
+    def mark_messages_as_delivered(requesting_user, target_user=None):
+        """Mark messages as delivered when viewed by recipient"""
+        marked_count = 0
+        for message in messages:
+            # For broadcast messages
+            if not target_user and message.get('type') == 'broadcast':
+                if (message.get('sender') != requesting_user and 
+                    not message.get('delivered')):
+                    message['delivered'] = True
+                    marked_count += 1
+            # For private messages
+            elif target_user and message.get('type') == 'private':
+                if ((message.get('sender') == requesting_user and 
+                     message.get('target_user') == target_user) or
+                    (message.get('sender') == target_user and 
+                     message.get('target_user') == requesting_user)):
+                    if not message.get('delivered'):
+                        message['delivered'] = True
+                        marked_count += 1
+        
+        if marked_count > 0:
+            logger.info(f"Marked {marked_count} messages as delivered for {requesting_user}")
+        return marked_count
 
 class FileManager:
     """Manages file operations"""
@@ -325,8 +354,8 @@ def login():
             'last_seen': datetime.now().isoformat()
         }
 
-        # Add system message
-        MessageManager.add_message('System', f'{username} joined the chat', message_type='system')
+        # Remove system message for joining
+        # MessageManager.add_message('System', f'{username} joined the chat', message_type='system')
 
         logger.info(f"User logged in: {username}")
         return jsonify({
@@ -435,6 +464,27 @@ def edit_delete_message(message_id):
         logger.error(f"Edit/delete message error: {e}")
         return jsonify({'success': False, 'message': 'Server error processing request'}), 500
 
+@app.route('/api/messages/mark-delivered', methods=['POST'])
+def mark_messages_delivered():
+    """Mark messages as delivered when viewed"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Invalid request data'}), 400
+        
+        requesting_user = data.get('user', '').strip()
+        target_user = data.get('target_user')  # Optional, for private chats
+        
+        if not requesting_user:
+            return jsonify({'success': False, 'message': 'User parameter required'}), 400
+        
+        marked_count = MessageManager.mark_messages_as_delivered(requesting_user, target_user)
+        return jsonify({'success': True, 'marked_count': marked_count})
+        
+    except Exception as e:
+        logger.error(f"Mark delivered error: {e}")
+        return jsonify({'success': False, 'message': 'Server error marking messages as delivered'}), 500
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     """Handle file uploads"""
@@ -494,7 +544,8 @@ def logout():
 
         if username in online_users:
             del online_users[username]
-            MessageManager.add_message('System', f'{username} left the chat', message_type='system')
+            # Remove system message for leaving
+            # MessageManager.add_message('System', f'{username} left the chat', message_type='system')
             logger.info(f"User logged out: {username}")
 
         return jsonify({'success': True})
@@ -519,7 +570,8 @@ def cleanup_inactive_users():
 
             for username in inactive_users:
                 del online_users[username]
-                MessageManager.add_message('System', f'{username} disconnected', message_type='system')
+                # Remove system message for disconnection
+                # MessageManager.add_message('System', f'{username} disconnected', message_type='system')
                 logger.info(f"Removed inactive user: {username}")
                 
         except Exception as e:
