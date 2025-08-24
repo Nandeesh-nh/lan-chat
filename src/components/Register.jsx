@@ -100,6 +100,7 @@ function Register() {
                   name="username"
                   type="text"
                   required
+                  autoComplete="username"
                   className="input-field pl-10"
                   placeholder="Choose a username (min 3 characters)"
                   value={username}
@@ -121,6 +122,7 @@ function Register() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="new-password"
                   className="input-field pl-10 pr-10"
                   placeholder="Choose a password (min 6 characters)"
                   value={password}
@@ -153,6 +155,7 @@ function Register() {
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
+                  autoComplete="new-password"
                   className="input-field pl-10 pr-10"
                   placeholder="Confirm your password"
                   value={confirmPassword}

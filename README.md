@@ -31,6 +31,14 @@ A complete web-based LAN chat and file sharing application built with React, Tai
 - **User authentication** with session management
 - **File type validation** for security
 
+### 🔔 Notifications & Status
+- **Browser notifications** for private messages when tabs are not active
+- **Real-time online status** indicators for all users
+- **Unread message counters** for both broadcast and private chats
+- **Sound notifications** with toggle control
+- **Background notification support** even when app is minimized
+- **Smart notification logic** - shows notifications for unopened private chats
+
 ## 🗂️ Data Storage Locations
 
 ### 📊 User Data
@@ -66,6 +74,26 @@ A complete web-based LAN chat and file sharing application built with React, Tai
 - **Active Sessions**: Managed in `online_users` dictionary
 - **File Storage**: Physical files in `uploads/` directory
 - **User Accounts**: Persistent in `users.json`
+
+## 🔔 Using Notifications
+
+### Browser Notifications
+1. **Enable notifications** when prompted by the browser
+2. **Toggle notification bell** in the header to enable/disable
+3. **Toggle sound** with the volume button for audio notifications
+4. **Receive notifications** for private messages even when tabs are closed
+5. **Click notifications** to automatically open the relevant chat
+
+### Online Status
+- **Green dot**: User is online and active
+- **Gray dot**: User is offline or inactive
+- **Real-time updates** every 5 seconds
+- **Heartbeat system** keeps users marked as online
+
+### Unread Message Indicators
+- **Red dots**: Unread messages in open tabs
+- **Red badges**: Unread message counts for closed tabs
+- **Smart counting**: Tracks messages even when private chat tabs aren't open
 
 ## 🚀 Quick Start
 

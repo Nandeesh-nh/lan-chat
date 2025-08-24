@@ -385,6 +385,28 @@ def get_users():
         logger.error(f"Error getting users: {e}")
         return jsonify([])
 
+@app.route('/api/heartbeat', methods=['POST'])
+def heartbeat():
+    """Update user's last seen timestamp to keep them online"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Invalid request data'}), 400
+        
+        username = data.get('username', '').strip()
+        if not username:
+            return jsonify({'success': False, 'message': 'Username required'}), 400
+        
+        if username in online_users:
+            online_users[username]['last_seen'] = datetime.now().isoformat()
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'message': 'User not found in online users'}), 404
+            
+    except Exception as e:
+        logger.error(f"Heartbeat error: {e}")
+        return jsonify({'success': False, 'message': 'Server error processing heartbeat'}), 500
+
 @app.route('/api/messages', methods=['GET', 'POST'])
 def handle_messages():
     """Handle messages - GET for retrieving, POST for sending"""

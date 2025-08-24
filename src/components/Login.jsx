@@ -64,6 +64,7 @@ function Login() {
                   name="username"
                   type="text"
                   required
+                  autoComplete="username"
                   className="input-field pl-10"
                   placeholder="Enter your username"
                   value={username}
@@ -85,6 +86,7 @@ function Login() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="current-password"
                   className="input-field pl-10 pr-10"
                   placeholder="Enter your password"
                   value={password}

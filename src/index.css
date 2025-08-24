@@ -135,4 +135,47 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #A0AEC0;
   }
+
+  /* Notification indicators */
+  .notification-badge {
+    @apply bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center;
+    animation: pulse 2s infinite;
+  }
+
+  .notification-dot {
+    @apply h-2 w-2 bg-red-500 rounded-full;
+    animation: pulse 2s infinite;
+  }
+
+  .online-indicator {
+    @apply h-2 w-2 rounded-full;
+  }
+
+  .online-indicator.online {
+    @apply bg-green-500;
+  }
+
+  .online-indicator.offline {
+    @apply bg-gray-400;
+  }
+
+  /* Pulse animation for notifications */
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Enhanced notification styles */
+  .notification-count {
+    @apply bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }

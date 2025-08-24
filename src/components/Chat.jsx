@@ -23,9 +23,12 @@ function Chat() {
   const [activeTab, setActiveTab] = useState(null) // Currently active tab
   const [unreadCounts, setUnreadCounts] = useState({}) // Track unread messages per tab
   const [lastMessageCounts, setLastMessageCounts] = useState({}) // Track message counts for comparison
+  const [onlineStatus, setOnlineStatus] = useState({}) // Track online status of users
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
   const messagesContainerRef = useRef(null) // For smart scrolling
+
+
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -43,6 +46,8 @@ function Chat() {
       }
     }
   }, [messages])
+
+  
 
   const loadMessages = async () => {
     try {
@@ -100,14 +105,14 @@ function Chat() {
     const broadcastCount = broadcastMessages.length
     newLastMessageCounts['broadcast'] = broadcastCount
     
-    // If broadcast tab is not active, count unread
+    // If broadcast tab is not active, show unread indicator
     if (!activeTab) {
       const lastCount = lastMessageCounts['broadcast'] || 0
       if (broadcastCount > lastCount) {
-        newUnreadCounts['broadcast'] = (newUnreadCounts['broadcast'] || 0) + (broadcastCount - lastCount)
+        newUnreadCounts['broadcast'] = true // Just show dot, not count
       }
     } else {
-      newUnreadCounts['broadcast'] = 0
+      newUnreadCounts['broadcast'] = false
     }
     
     // Count private messages for each user
@@ -123,14 +128,43 @@ function Chat() {
       const privateCount = privateMessages.length
       newLastMessageCounts[tab.id] = privateCount
       
-      // If this tab is not active, count unread
+      // If this tab is not active, show unread indicator
       if (activeTab !== tab.id) {
         const lastCount = lastMessageCounts[tab.id] || 0
         if (privateCount > lastCount) {
-          newUnreadCounts[tab.id] = (newUnreadCounts[tab.id] || 0) + (privateCount - lastCount)
+          newUnreadCounts[tab.id] = true // Just show dot, not count
         }
       } else {
-        newUnreadCounts[tab.id] = 0
+        newUnreadCounts[tab.id] = false
+      }
+    })
+    
+    // Also count unread messages for users who don't have tabs open
+    users.forEach(user => {
+      if (user !== currentUser.username) {
+        const privateMessages = allMessages.filter(message => {
+          if (message.type === 'private' || message.target_user) {
+            return (message.sender === currentUser.username && message.target_user === user) ||
+                   (message.sender === user && message.target_user === currentUser.username)
+          }
+          return false
+        })
+        
+        const privateCount = privateMessages.length
+        const userTab = activeTabs.find(tab => tab.user === user)
+        
+        if (!userTab) {
+          // No tab open for this user, count all messages as unread
+          newUnreadCounts[`user_${user}`] = privateCount > 0
+        } else {
+          // Tab exists but might not be active
+          if (activeTab !== userTab.id) {
+            const lastCount = lastMessageCounts[userTab.id] || 0
+            if (privateCount > lastCount) {
+              newUnreadCounts[userTab.id] = true // Just show dot, not count
+            }
+          }
+        }
       }
     })
     
@@ -353,13 +387,43 @@ function Chat() {
     return () => clearInterval(interval)
   }, [activeTab]) // Add activeTab as dependency to reload when tab changes
 
-  // Load users list
+  // Send heartbeat to keep user online
+  useEffect(() => {
+    const sendHeartbeat = async () => {
+      try {
+        await fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: currentUser.username,
+          }),
+        })
+      } catch (error) {
+        console.error('Error sending heartbeat:', error)
+      }
+    }
+
+    const heartbeatInterval = setInterval(sendHeartbeat, 30000) // Every 30 seconds
+    return () => clearInterval(heartbeatInterval)
+  }, [currentUser.username])
+
+  // Load users list and update online status
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const response = await fetch('/api/users')
         const data = await response.json()
-        setUsers(data.filter(user => user !== currentUser.username))
+        const filteredUsers = data.filter(user => user !== currentUser.username)
+        setUsers(filteredUsers)
+        
+        // Update online status for all users
+        const newOnlineStatus = {}
+        filteredUsers.forEach(user => {
+          newOnlineStatus[user] = true // All users in the list are online
+        })
+        setOnlineStatus(newOnlineStatus)
       } catch (error) {
         console.error('Error loading users:', error)
       }
@@ -436,6 +500,7 @@ function Chat() {
                 </div>
               </div>
             </div>
+
             <button
               onClick={logout}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
@@ -474,7 +539,9 @@ function Chat() {
             {users.map((user) => {
               // Check if user has unread messages
               const userTab = activeTabs.find(tab => tab.user === user)
-              const hasUnread = userTab ? unreadCounts[userTab.id] > 0 : false
+              const hasUnread = userTab ? unreadCounts[userTab.id] : false
+              const hasUnreadNoTab = unreadCounts[`user_${user}`]
+              const isOnline = onlineStatus[user]
               
               return (
                 <button
@@ -487,15 +554,17 @@ function Chat() {
                   }`}
                 >
                   <div className="flex items-center space-x-2">
-                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                    <div className={`online-indicator ${isOnline ? 'online' : 'offline'}`}></div>
                     <User className="h-4 w-4" />
                     <span className="text-sm">{user}</span>
                     {user === currentUser.username && (
                       <span className="text-xs text-gray-500">(You)</span>
                     )}
                     {/* Notification indicator for unread messages */}
-                    {hasUnread && (
-                      <div className="ml-auto h-2 w-2 bg-red-500 rounded-full"></div>
+                    {(hasUnread || hasUnreadNoTab) && (
+                      <div className="ml-auto">
+                        <div className="notification-dot"></div>
+                      </div>
                     )}
                   </div>
                 </button>
@@ -523,12 +592,8 @@ function Chat() {
                 <Globe className="h-4 w-4" />
                 <span className="text-sm">Broadcast</span>
                 {/* Notification indicator for broadcast */}
-                {unreadCounts['broadcast'] > 0 && (
-                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-xs text-white font-bold">
-                      {unreadCounts['broadcast'] > 9 ? '9+' : unreadCounts['broadcast']}
-                    </span>
-                  </div>
+                {unreadCounts['broadcast'] && (
+                  <div className="absolute -top-1 -right-1 notification-dot"></div>
                 )}
               </button>
 
@@ -552,12 +617,8 @@ function Chat() {
                     <User className="h-4 w-4" />
                     <span className="text-sm">{tab.user}</span>
                     {/* Notification indicator for private chat */}
-                    {unreadCounts[tab.id] > 0 && (
-                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full flex items-center justify-center">
-                        <span className="text-xs text-white font-bold">
-                          {unreadCounts[tab.id] > 9 ? '9+' : unreadCounts[tab.id]}
-                        </span>
-                      </div>
+                    {unreadCounts[tab.id] && (
+                      <div className="absolute -top-1 -right-1 notification-dot"></div>
                     )}
                   </button>
                   <button
@@ -581,6 +642,7 @@ function Chat() {
                   <div className="flex items-center space-x-2">
                     <User className="h-5 w-5" />
                     <span>Chat with {selectedUser}</span>
+                    <div className={`online-indicator ${onlineStatus[selectedUser] ? 'online' : 'offline'}`}></div>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
