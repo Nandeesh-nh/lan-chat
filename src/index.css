@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50;
+  }
+
+  /* Mobile-specific styles */
+  @media (max-width: 768px) {
+    body {
+      font-size: 14px;
+    }
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200;
+  }
+
+  /* Mobile responsive utilities */
+  .mobile-container {
+    @apply max-w-full mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-padding {
+    @apply p-3 sm:p-4;
+  }
+
+  /* Chat message styles */
+  .message-bubble {
+    @apply max-w-xs sm:max-w-md lg:max-w-lg px-4 py-2 rounded-lg break-words;
+  }
+
+  .message-bubble-own {
+    @apply bg-primary-600 text-white;
+  }
+
+  .message-bubble-other {
+    @apply bg-white text-gray-900 border border-gray-200;
+  }
+
+  .message-bubble-file {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  /* File upload modal */
+  .file-modal {
+    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4;
+  }
+
+  .file-modal-content {
+    @apply bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto;
+  }
+
+  /* Sidebar styles */
+  .sidebar {
+    @apply bg-white border-r border-gray-200 flex flex-col;
+  }
+
+  .sidebar-mobile {
+    @apply w-full lg:w-80;
+  }
+
+  /* User list styles */
+  .user-item {
+    @apply w-full text-left p-2 rounded-lg transition-colors hover:bg-gray-100;
+  }
+
+  .user-item-selected {
+    @apply bg-primary-100 text-primary-700;
+  }
+
+  /* Responsive text */
+  .text-responsive {
+    @apply text-xs sm:text-sm lg:text-base;
+  }
+
+  /* Responsive spacing */
+  .space-responsive {
+    @apply space-y-2 sm:space-y-3 lg:space-y-4;
+  }
+
+  /* Mobile-friendly buttons */
+  .btn-mobile {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Touch-friendly inputs */
+  .input-touch {
+    @apply min-h-[44px] text-base;
+  }
+
+  /* Scrollbar styles */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E0 #F7FAFC;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #F7FAFC;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #CBD5E0;
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #A0AEC0;
+  }
+}
