@@ -1,120 +1,199 @@
-# 🚀 Modern LAN Chat & File Sharing
+# Modern LAN Chat & File Sharing Application
 
-A beautiful, modern web-based chat application with file sharing capabilities built with **React**, **Tailwind CSS**, and **Python Flask**.
+A complete web-based LAN chat and file sharing application built with React, Tailwind CSS, and Python Flask. Perfect for office/classroom environments with real-time messaging, file sharing, and mobile-responsive design.
 
 ## ✨ Features
 
-- **Modern UI/UX** - Beautiful interface with Tailwind CSS
-- **Real-time Messaging** - Broadcast and private messages
-- **File Sharing** - Send files up to 50MB
-- **User Authentication** - Secure login/registration
-- **Responsive Design** - Works on desktop and mobile
-- **LAN-Only** - No internet required
-- **Cross-Platform** - Access from any device with a browser
+### 💬 Messaging
+- **Real-time messaging** with automatic updates
+- **Broadcast messages** to all users
+- **Private conversations** between specific users
+- **Message editing and deletion** (for your own messages)
+- **System notifications** for user join/leave events
 
-## 📁 Project Structure
+### 📁 File Sharing
+- **File upload and download** support
+- **Multiple file types** (documents, images, archives)
+- **File sharing in both broadcast and private chats**
+- **Secure file storage** with unique naming
+- **File size validation** (max 50MB)
 
-```
-lan-chat/
-├── src/                    # React frontend
-│   ├── components/         # React components
-│   ├── contexts/          # React contexts
-│   └── ...
-├── server.py              # Python Flask server
-├── users.json             # User database (auto-created)
-├── uploads/               # File storage (auto-created)
-├── package.json           # Frontend dependencies
-└── requirements.txt       # Backend dependencies
-```
+### 📱 Mobile Experience
+- **Fully responsive design** for all devices
+- **Touch-friendly interface** with proper button sizes
+- **Mobile-optimized navigation** with collapsible sidebar
+- **Fixed header and input areas** for better UX
+- **Smart auto-scroll** that respects user position
 
-## 🔐 User Data Storage
+### 🔐 Security & Privacy
+- **SHA-256 password hashing** for secure storage
+- **Private chat filtering** - messages only visible to participants
+- **User authentication** with session management
+- **File type validation** for security
 
-**Location**: `users.json` file in the project root
-**Format**: JSON with SHA-256 hashed passwords
-**Example**:
+## 🗂️ Data Storage Locations
+
+### 📊 User Data
+- **File**: `users.json`
+- **Location**: Project root directory
+- **Content**: Username, hashed passwords, account creation timestamps
+- **Format**: JSON
+- **Example**:
 ```json
 {
   "username": {
-    "password": "hashed_password_here",
+    "password": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
     "created": "2025-08-24T16:58:49.465887"
   }
 }
 ```
 
+### 💬 Messages
+- **Storage**: In-memory (server restart clears messages)
+- **Backend**: `server.py` - `messages` list
+- **Format**: JSON objects with timestamps, sender, content, type
+- **Persistence**: Messages are not saved to disk (ephemeral)
+
+### 📁 Uploaded Files
+- **Directory**: `uploads/`
+- **Location**: Project root directory
+- **Naming**: `timestamp_sender_originalname.ext`
+- **Example**: `20250824_175300_username_document.pdf`
+- **Access**: Via `/api/download/filename` endpoint
+
+### 🗄️ Server State
+- **Online Users**: In-memory tracking in `server.py`
+- **Active Sessions**: Managed in `online_users` dictionary
+- **File Storage**: Physical files in `uploads/` directory
+- **User Accounts**: Persistent in `users.json`
+
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### Prerequisites
+- Python 3.7+
+- Node.js 14+
+- npm or yarn
 
-**Backend (Python):**
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd lan-chat
+```
+
+2. **Install backend dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-**Frontend (Node.js):**
+3. **Install frontend dependencies**
 ```bash
 npm install
 ```
 
-### 2. Start the Server
+### Running the Application
 
-**Terminal 1 - Backend:**
+#### Option 1: Manual Start
+1. **Start the backend server**
 ```bash
 python server.py
 ```
 
-**Terminal 2 - Frontend:**
+2. **Start the frontend development server**
 ```bash
-npm run dev
+npm run dev -- --host
 ```
 
-### 3. Access the Application
+#### Option 2: Using the Start Script (Windows)
+```bash
+start.bat
+```
 
+### Access URLs
 - **Frontend**: http://localhost:3000
-- **API Server**: http://localhost:5000
-- **Mobile Access**: http://YOUR_IP:3000
+- **Backend API**: http://localhost:5000
+- **Mobile Access**: http://[your-ip]:3000
 
 ## 📱 Mobile Access
 
-1. **Start both servers** (backend and frontend)
-2. **Get your IP address** from the server output
-3. **Share the URL** with others on your network
-4. **Access from mobile** - any device with a browser
+### From Mobile Devices
+1. Ensure your mobile device is on the same WiFi network
+2. Find your computer's IP address (displayed in server startup)
+3. Open browser and navigate to: `http://[your-ip]:3000`
+4. Register/login and start chatting!
 
-## 🔧 Configuration
+### Network Configuration
+- **Frontend**: Automatically exposes to network with `--host` flag
+- **Backend**: Binds to `0.0.0.0:5000` for network access
+- **Firewall**: May need to allow connections on ports 3000 and 5000
+
+## 🛠️ Configuration
 
 ### File Upload Settings
-- **Max File Size**: 50MB
-- **Allowed Extensions**: txt, pdf, png, jpg, jpeg, gif, doc, docx, xls, xlsx, ppt, pptx, zip, rar
-- **Storage Location**: `uploads/` folder
+```python
+# server.py
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar'}
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+```
 
-### Network Settings
-- **Frontend Port**: 3000
-- **Backend Port**: 5000
-- **CORS**: Enabled for local development
+### Server Settings
+```python
+# server.py
+app.run(host='0.0.0.0', port=5000, debug=False)
+```
 
-## 🎨 UI Features
+### Frontend Settings
+```javascript
+// vite.config.js
+server: {
+  port: 3000,
+  proxy: {
+    '/api': 'http://localhost:5000',
+    '/socket.io': 'http://localhost:5000'
+  }
+}
+```
 
-### Modern Design
-- **Clean Interface** - Minimalist design with Tailwind CSS
-- **Responsive Layout** - Adapts to any screen size
-- **Dark/Light Mode** - Automatic theme detection
-- **Smooth Animations** - Fade-in and slide-up effects
+## 🎨 UI/UX Features
 
-### User Experience
-- **Real-time Updates** - Messages appear instantly
-- **File Upload Modal** - Easy file selection and upload
-- **User Status** - Online/offline indicators
-- **Message History** - Last 100 messages preserved
+### Design System
+- **Framework**: Tailwind CSS
+- **Icons**: Lucide React
+- **Colors**: Custom primary color palette
+- **Typography**: Inter font family
+- **Animations**: Smooth transitions and hover effects
+
+### Responsive Breakpoints
+- **Mobile**: < 768px
+- **Tablet**: 768px - 1024px
+- **Desktop**: > 1024px
+
+### Mobile Optimizations
+- **Touch targets**: Minimum 44px for buttons
+- **Fixed positioning**: Header and input areas
+- **Collapsible sidebar**: Hidden by default on mobile
+- **Optimized scrolling**: Smart auto-scroll behavior
 
 ## 🔒 Security Features
 
-- **Password Hashing** - SHA-256 encryption
-- **Input Validation** - Server-side validation
-- **File Type Checking** - Whitelist of allowed extensions
-- **File Size Limits** - Prevents abuse
-- **Local Network Only** - No external internet access
+### Password Security
+- **Hashing**: SHA-256 algorithm
+- **Storage**: Hashed passwords only
+- **Validation**: Minimum 6 characters required
 
-## 📊 API Endpoints
+### File Security
+- **Type validation**: Whitelist of allowed extensions
+- **Size limits**: 50MB maximum file size
+- **Secure naming**: Timestamp-based unique filenames
+- **Path sanitization**: Using `secure_filename`
+
+### Privacy
+- **Private messages**: Only visible to sender and recipient
+- **User filtering**: Messages filtered by user permissions
+- **Session management**: Automatic cleanup of inactive users
+
+## 📡 API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - User registration
@@ -122,114 +201,147 @@ npm run dev
 - `POST /api/logout` - User logout
 
 ### Messaging
-- `GET /api/messages` - Get message history
+- `GET /api/messages?user=username` - Get filtered messages
 - `POST /api/messages` - Send new message
-- `GET /api/users` - Get online users
+- `PUT /api/messages/:id` - Edit message
+- `DELETE /api/messages/:id` - Delete message
 
-### File Sharing
+### Users
+- `GET /api/users` - Get online users list
+
+### File Operations
 - `POST /api/upload` - Upload file
-- `GET /api/download/<filename>` - Download file
+- `GET /api/download/:filename` - Download file
 
-## 🛠️ Development
+## 🧪 Development
 
-### Frontend Development
-```bash
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
+### Project Structure
+```
+lan-chat/
+├── src/
+│   ├── components/
+│   │   ├── Chat.jsx          # Main chat interface
+│   │   ├── Login.jsx         # Login component
+│   │   └── Register.jsx      # Registration component
+│   ├── contexts/
+│   │   └── AuthContext.jsx   # Authentication context
+│   ├── App.jsx               # Main app component
+│   ├── main.jsx              # App entry point
+│   └── index.css             # Global styles
+├── server.py                 # Flask backend server
+├── users.json                # User data storage
+├── uploads/                  # File storage directory
+├── requirements.txt          # Python dependencies
+├── package.json              # Node.js dependencies
+└── README.md                 # This file
 ```
 
-### Backend Development
-```bash
-# Start server with debug mode
-python server.py
+### Key Technologies
+- **Frontend**: React 18, Tailwind CSS, Vite
+- **Backend**: Python Flask, Flask-CORS
+- **File Handling**: Werkzeug secure_filename
+- **Authentication**: SHA-256 hashing
+- **Real-time**: Polling-based updates
 
-# Install development dependencies
-pip install -r requirements.txt
-```
+## 🌐 Browser Support
 
-## 📱 Browser Support
+### Supported Browsers
+- **Chrome**: 90+
+- **Firefox**: 88+
+- **Safari**: 14+
+- **Edge**: 90+
 
-- ✅ Chrome (Desktop & Mobile)
-- ✅ Safari (Desktop & Mobile)
-- ✅ Firefox (Desktop & Mobile)
-- ✅ Edge (Desktop & Mobile)
-- ✅ Opera (Desktop & Mobile)
+### Mobile Browsers
+- **iOS Safari**: 14+
+- **Chrome Mobile**: 90+
+- **Samsung Internet**: 14+
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-**"Module not found" errors:**
-```bash
-npm install  # For frontend
-pip install -r requirements.txt  # For backend
-```
+#### Frontend Not Loading
+- Check if `npm run dev` is running
+- Verify port 3000 is not in use
+- Check browser console for errors
 
-**"Port already in use":**
-- Change ports in `vite.config.js` (frontend)
-- Change port in `server.py` (backend)
+#### Backend Connection Issues
+- Ensure `python server.py` is running
+- Check if port 5000 is available
+- Verify firewall settings
 
-**"CORS errors":**
-- Ensure both servers are running
-- Check that CORS is enabled in `server.py`
-
-**"File upload fails":**
+#### File Upload Fails
 - Check file size (max 50MB)
-- Verify file extension is allowed
-- Ensure `uploads/` folder exists
+- Verify file type is allowed
+- Ensure `uploads/` directory exists
 
-### Network Issues
+#### Mobile Access Issues
+- Verify devices are on same network
+- Check IP address is correct
+- Ensure `--host` flag is used for frontend
 
-**Can't access from mobile:**
-1. Check firewall settings
-2. Ensure devices are on same network
-3. Use the correct IP address
-4. Try accessing from desktop first
+### Performance Optimization
+- **Message limit**: Only last 100 messages kept in memory
+- **User cleanup**: Inactive users removed after 10 minutes
+- **File cleanup**: Manual cleanup of old files recommended
 
-## 📈 Performance
-
-- **Message History**: Limited to last 100 messages
-- **File Storage**: Automatic cleanup of old files
-- **User Sessions**: Auto-logout after 10 minutes of inactivity
-- **Real-time Updates**: Polling every 2-3 seconds
-
-## 🎯 Usage Scenarios
+## 📊 Usage Scenarios
 
 ### Office Environment
-- **Desktop users**: Access via browser
-- **Mobile users**: Access via mobile browser
-- **File sharing**: Documents, presentations, images
-- **Private messaging**: Confidential discussions
+- **Team communication**: Broadcast messages to all staff
+- **Private discussions**: One-on-one conversations
+- **Document sharing**: Quick file transfers
+- **Meeting coordination**: Real-time updates
 
-### Classroom Environment
-- **Students**: Access from phones/tablets
-- **Teachers**: Access from computers
-- **File sharing**: Assignments, resources
-- **Broadcast messaging**: Announcements
+### Classroom Setting
+- **Student collaboration**: Group discussions
+- **Assignment sharing**: File distribution
+- **Teacher-student communication**: Private messaging
+- **Resource sharing**: Educational materials
 
-### Home Network
-- **Family chat**: Cross-device communication
-- **File sharing**: Photos, documents
-- **No internet dependency**: Works offline
+### Small Teams
+- **Project coordination**: Task updates
+- **File collaboration**: Shared document access
+- **Quick communication**: Instant messaging
+- **Remote work**: Local network access
+
+## 🔄 Updates & Maintenance
+
+### Data Backup
+- **User accounts**: Backup `users.json` regularly
+- **Uploaded files**: Copy `uploads/` directory
+- **Configuration**: Document any custom settings
+
+### Server Maintenance
+- **Restart**: Messages will be cleared
+- **File cleanup**: Remove old files from `uploads/`
+- **User management**: Monitor `users.json` size
+
+### Security Updates
+- **Dependencies**: Keep packages updated
+- **File permissions**: Secure `uploads/` directory
+- **Network security**: Use firewall rules
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📞 Support
 
-For issues or questions:
+For issues and questions:
 1. Check the troubleshooting section
-2. Verify all dependencies are installed
-3. Ensure both servers are running
-4. Check network connectivity
-
-## 🎉 Ready to Use!
-
-The application is **fully functional** and ready for immediate use. Simply follow the setup instructions above and start chatting!
+2. Review the API documentation
+3. Check browser console for errors
+4. Verify network connectivity
 
 ---
 
-**Built with ❤️ using React, Tailwind CSS, and Python Flask**
+**Note**: This application is designed for local network use. For production deployment, consider additional security measures and proper hosting infrastructure.

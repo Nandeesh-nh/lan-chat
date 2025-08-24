@@ -12,7 +12,10 @@ import {
   Wifi,
   WifiOff,
   Globe,
-  User
+  User,
+  Edit,
+  Trash2,
+  MoreVertical
 } from 'lucide-react'
 
 function Chat() {
@@ -26,15 +29,28 @@ function Chat() {
   const [uploading, setUploading] = useState(false)
   const [showFileModal, setShowFileModal] = useState(false)
   const [showUsersList, setShowUsersList] = useState(false)
+  const [editingMessage, setEditingMessage] = useState(null)
+  const [editText, setEditText] = useState('')
+  const [showMessageMenu, setShowMessageMenu] = useState(null)
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
+  const messagesContainerRef = useRef(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
+    }
   }
 
   useEffect(() => {
-    scrollToBottom()
+    // Only auto-scroll if user is at bottom
+    const container = messagesContainerRef.current
+    if (container) {
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100
+      if (isAtBottom) {
+        scrollToBottom()
+      }
+    }
   }, [messages])
 
   useEffect(() => {
@@ -57,7 +73,7 @@ function Chat() {
 
   const loadMessages = async () => {
     try {
-      const response = await fetch('/api/messages')
+      const response = await fetch(`/api/messages?user=${currentUser.username}`)
       const data = await response.json()
       setMessages(data)
     } catch (error) {
@@ -100,14 +116,60 @@ function Chat() {
     }
   }
 
+  const editMessage = async (messageId, newText) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: newText,
+          user: currentUser.username,
+        }),
+      })
+
+      if (response.ok) {
+        setEditingMessage(null)
+        setEditText('')
+        loadMessages()
+      }
+    } catch (error) {
+      console.error('Error editing message:', error)
+    }
+  }
+
+  const deleteMessage = async (messageId) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: currentUser.username,
+        }),
+      })
+
+      if (response.ok) {
+        setShowMessageMenu(null)
+        loadMessages()
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error)
+    }
+  }
+
   const handleFileUpload = async () => {
-    if (!fileUpload || !selectedUser) return
+    if (!fileUpload) return
 
     setUploading(true)
     const formData = new FormData()
     formData.append('file', fileUpload)
     formData.append('sender', currentUser.username)
-    formData.append('target_user', selectedUser)
+    if (selectedUser) {
+      formData.append('target_user', selectedUser)
+    }
 
     try {
       const response = await fetch('/api/upload', {
@@ -165,10 +227,21 @@ function Chat() {
     setShowUsersList(false)
   }
 
+  const startEditing = (message) => {
+    setEditingMessage(message.id)
+    setEditText(message.message)
+    setShowMessageMenu(null)
+  }
+
+  const cancelEditing = () => {
+    setEditingMessage(null)
+    setEditText('')
+  }
+
   return (
     <div className="h-screen bg-gray-50 flex flex-col lg:flex-row">
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white border-b border-gray-200 p-4">
+      <div className="lg:hidden bg-white border-b border-gray-200 p-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center">
@@ -209,9 +282,9 @@ function Chat() {
       </div>
 
       {/* Sidebar - Hidden on mobile unless toggled */}
-      <div className={`${showUsersList ? 'block' : 'hidden'} lg:block w-full lg:w-80 bg-white border-r border-gray-200 flex flex-col`}>
+      <div className={`${showUsersList ? 'block' : 'hidden'} lg:block w-full lg:w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0`}>
         {/* Desktop Header */}
-        <div className="hidden lg:block p-4 border-b border-gray-200">
+        <div className="hidden lg:block p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 bg-primary-600 rounded-full flex items-center justify-center">
@@ -296,9 +369,9 @@ function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Chat Header */}
-        <div className="bg-white border-b border-gray-200 p-4">
+        <div className="bg-white border-b border-gray-200 p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-semibold text-gray-900">
@@ -318,41 +391,83 @@ function Chat() {
                 {selectedUser ? 'Private conversation' : 'Message all users'}
               </p>
             </div>
-            {selectedUser && (
-              <button
-                onClick={() => setShowFileModal(true)}
-                className="btn-primary flex items-center space-x-2"
-              >
-                <Paperclip className="h-4 w-4" />
-                <span className="hidden sm:inline">Send File</span>
-              </button>
-            )}
+            <button
+              onClick={() => setShowFileModal(true)}
+              className="btn-primary flex items-center space-x-2"
+            >
+              <Paperclip className="h-4 w-4" />
+              <span className="hidden sm:inline">Send File</span>
+            </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div 
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
+        >
           {messages.map((message, index) => (
             <div
-              key={index}
+              key={message.id || index}
               className={`flex ${message.sender === currentUser.username ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-xs sm:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${
+                className={`max-w-xs sm:max-w-md lg:max-w-lg px-4 py-2 rounded-lg relative group ${
                   message.sender === currentUser.username
                     ? 'bg-primary-600 text-white'
                     : message.type === 'file'
                     ? 'bg-yellow-100 text-yellow-800'
+                    : message.type === 'system'
+                    ? 'bg-gray-100 text-gray-600 text-center mx-auto'
                     : 'bg-white text-gray-900 border border-gray-200'
                 }`}
               >
+                {/* Message Menu for own messages */}
+                {message.sender === currentUser.username && message.type !== 'system' && (
+                  <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setShowMessageMenu(showMessageMenu === message.id ? null : message.id)}
+                      className="bg-gray-800 text-white p-1 rounded-full hover:bg-gray-700"
+                    >
+                      <MoreVertical className="h-3 w-3" />
+                    </button>
+                    
+                    {showMessageMenu === message.id && (
+                      <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                        <button
+                          onClick={() => startEditing(message)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2"
+                        >
+                          <Edit className="h-3 w-3" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => deleteMessage(message.id)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 text-red-600 flex items-center space-x-2"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-start space-x-2">
                   {message.type === 'file' && (
                     <File className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   )}
                   <div className="flex-1">
-                    <div className="text-xs opacity-75 mb-1">
-                      {message.sender} • {formatTime(message.timestamp)}
+                    <div className="text-xs opacity-75 mb-1 flex items-center space-x-2">
+                      <span>{message.sender}</span>
+                      <span>•</span>
+                      <span>{formatTime(message.timestamp)}</span>
+                      {message.edited && (
+                        <>
+                          <span>•</span>
+                          <span className="italic">edited</span>
+                        </>
+                      )}
                     </div>
                     <div className="text-sm">
                       {message.type === 'file' ? (
@@ -378,7 +493,7 @@ function Chat() {
         </div>
 
         {/* Message Input */}
-        <div className="bg-white border-t border-gray-200 p-4">
+        <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
           <div className="flex space-x-3">
             <div className="flex-1">
               <textarea
@@ -386,14 +501,14 @@ function Chat() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={selectedUser ? `Message ${selectedUser}...` : "Type a message..."}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none input-touch"
                 rows="1"
               />
             </div>
             <button
               onClick={sendMessage}
               disabled={!newMessage.trim()}
-              className="btn-primary flex items-center space-x-2"
+              className="btn-primary flex items-center space-x-2 btn-mobile"
             >
               <Send className="h-4 w-4" />
               <span className="hidden sm:inline">Send</span>
@@ -407,7 +522,9 @@ function Chat() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Send File to {selectedUser}</h3>
+              <h3 className="text-lg font-semibold">
+                Send File {selectedUser ? `to ${selectedUser}` : 'to Everyone'}
+              </h3>
               <button
                 onClick={() => setShowFileModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -458,6 +575,53 @@ function Chat() {
                   ) : (
                     'Send File'
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Message Modal */}
+      {editingMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Edit Message</h3>
+              <button
+                onClick={cancelEditing}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message
+                </label>
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                  rows="3"
+                />
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={cancelEditing}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => editMessage(editingMessage, editText)}
+                  disabled={!editText.trim()}
+                  className="btn-primary flex-1"
+                >
+                  Save Changes
                 </button>
               </div>
             </div>
