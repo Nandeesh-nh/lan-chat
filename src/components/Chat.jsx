@@ -83,6 +83,7 @@ function Chat() {
       setMessages(filteredMessages)
       setIsConnected(true)
       
+      
       // Update unread counts
       updateUnreadCounts(data)
       
