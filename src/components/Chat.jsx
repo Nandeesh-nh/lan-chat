@@ -704,8 +704,8 @@ function Chat() {
                           onClick={() => startEditing(message)}
                           className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2"
                         >
-                          <Edit className="h-3 w-3" />
-                          <span>Edit</span>
+                          <Edit className="h-3 w-3 text-black" strokeWidth={2} />
+                          <span className="text-black">Edit</span>
                         </button>
                         <button
                           onClick={() => deleteMessage(message.id)}
