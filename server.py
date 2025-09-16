@@ -15,6 +15,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import threading
 import time
+import re
 
 # Configure logging
 logging.basicConfig(
@@ -88,8 +89,10 @@ class UserManager:
         if not username or not password:
             return False, "Please enter both username and password"
         
-        if len(username) < 3:
-            return False, "Username must be at least 3 characters"
+        usernameCheck = "^[a-zA-Z][a-zA-Z0-9_]{3,15}$"
+        if not re.match(usernameCheck, username):
+            return False, "Invalid username format"
+
         
         if len(password) < 6:
             return False, "Password must be at least 6 characters"
